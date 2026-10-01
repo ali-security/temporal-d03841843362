@@ -772,8 +772,6 @@ func AdminBatchRefreshWorkflowTasks(c *cli.Context, clientFactory ClientFactory,
 	if jobID == "" {
 		jobID = fmt.Sprintf("batch-refresh-%d", time.Now().UnixNano())
 	}
-	jobIDWithNS := fmt.Sprintf("%s:%s", nsName, jobID)
-
 	ctx, cancel := newContext(c)
 	defer cancel()
 
@@ -790,7 +788,7 @@ func AdminBatchRefreshWorkflowTasks(c *cli.Context, clientFactory ClientFactory,
 		countResp.GetCount(), query, nsName)
 	prompter.Prompt(msg)
 
-	_, err = adminClient.StartAdminBatchOperation(ctx, &adminservice.StartAdminBatchOperationRequest{
+	resp, err := adminClient.StartAdminBatchOperation(ctx, &adminservice.StartAdminBatchOperationRequest{
 		Namespace:       nsName,
 		VisibilityQuery: query,
 		JobId:           jobID,
@@ -805,7 +803,7 @@ func AdminBatchRefreshWorkflowTasks(c *cli.Context, clientFactory ClientFactory,
 	}
 
 	// nolint:errcheck // assuming that write will succeed.
-	fmt.Fprintf(c.App.Writer, "Batch Refresh Workflow Tasks started successfully for Job ID: %s\n", jobIDWithNS)
+	fmt.Fprintf(c.App.Writer, "Batch Refresh Workflow Tasks started successfully for Job ID: %s\n", resp.GetWorkflowId())
 	return nil
 }
 

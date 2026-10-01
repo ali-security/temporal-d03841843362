@@ -5637,7 +5637,9 @@ func (*StartAdminBatchOperationRequest_DelegationOperation) isStartAdminBatchOpe
 }
 
 type StartAdminBatchOperationResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Workflow ID of the batch operation in the temporal-system namespace.
+	WorkflowId    string `protobuf:"bytes,1,opt,name=workflow_id,json=workflowId,proto3" json:"workflow_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5670,6 +5672,13 @@ func (x *StartAdminBatchOperationResponse) ProtoReflect() protoreflect.Message {
 // Deprecated: Use StartAdminBatchOperationResponse.ProtoReflect.Descriptor instead.
 func (*StartAdminBatchOperationResponse) Descriptor() ([]byte, []int) {
 	return file_temporal_server_api_adminservice_v1_request_response_proto_rawDescGZIP(), []int{91}
+}
+
+func (x *StartAdminBatchOperationResponse) GetWorkflowId() string {
+	if x != nil {
+		return x.WorkflowId
+	}
+	return ""
 }
 
 // BatchOperationRefreshTasks refreshes tasks for batch executions.
@@ -6362,8 +6371,10 @@ const file_temporal_server_api_adminservice_v1_request_response_proto_rawDesc = 
 	"\x17refresh_tasks_operation\x18\n" +
 	" \x01(\v2?.temporal.server.api.adminservice.v1.BatchOperationRefreshTasksH\x00R\x15refreshTasksOperation\x12^\n" +
 	"\x14delegation_operation\x18\v \x01(\x0e2).temporal.api.enums.v1.BatchOperationTypeH\x00R\x13delegationOperationB\v\n" +
-	"\toperation\"\"\n" +
-	" StartAdminBatchOperationResponse\"\x1c\n" +
+	"\toperation\"C\n" +
+	" StartAdminBatchOperationResponse\x12\x1f\n" +
+	"\vworkflow_id\x18\x01 \x01(\tR\n" +
+	"workflowId\"\x1c\n" +
 	"\x1aBatchOperationRefreshTasks\"\xe7\x02\n" +
 	"\x16MigrateScheduleRequest\x12\x1c\n" +
 	"\tnamespace\x18\x01 \x01(\tR\tnamespace\x12\x1f\n" +

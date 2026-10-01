@@ -20,6 +20,7 @@ type (
 		adminservice.AdminServiceClient
 		currentCluster string
 		lastRequest    *adminservice.StartAdminBatchOperationRequest
+		workflowID     string
 	}
 
 	batchTestWorkflowClient struct {
@@ -93,7 +94,7 @@ func (t *batchTestAdminClient) StartAdminBatchOperation(
 	_ ...grpc.CallOption,
 ) (*adminservice.StartAdminBatchOperationResponse, error) {
 	t.lastRequest = request
-	return &adminservice.StartAdminBatchOperationResponse{}, nil
+	return &adminservice.StartAdminBatchOperationResponse{WorkflowId: t.workflowID}, nil
 }
 
 const testCurrentCluster = "active-cluster"
@@ -105,7 +106,7 @@ func TestBatchCommandSuite(t *testing.T) {
 func (s *batchCommandTestSuite) SetupTest() {
 	s.Assertions = require.New(s.T())
 	s.client = &batchTestClient{
-		admin:    &batchTestAdminClient{currentCluster: testCurrentCluster},
+		admin:    &batchTestAdminClient{currentCluster: testCurrentCluster, workflowID: "target-ns:my-job"},
 		workflow: &batchTestWorkflowClient{activeCluster: testCurrentCluster},
 	}
 	s.app = NewCliApp(func(params *Params) {
@@ -145,6 +146,20 @@ func (s *batchCommandTestSuite) TestAdminBatchStart() {
 		s.Contains(s.output.String(), "Batch workflow namespace: \"temporal-system\"")
 		s.Contains(s.output.String(), "Operation: terminate-workflows")
 		s.Contains(s.output.String(), "Currently matching: 3 workflows")
+	})
+
+	s.Run("Prefixed job ID uses the server workflow ID", func() {
+		s.client.admin.workflowID = "server-returned-id"
+		defer func() { s.client.admin.workflowID = "target-ns:my-job" }()
+		s.NoError(s.run(
+			"--batch-type", batchTypeTerminateWorkflows,
+			"--query", "A=B",
+			"--reason", "cleanup",
+			"--job-id", "target-ns:my-job",
+		))
+		s.Equal("target-ns:my-job", s.client.admin.lastRequest.GetJobId())
+		s.Contains(s.output.String(), "with Job ID: server-returned-id")
+		s.NotContains(s.output.String(), "target-ns:target-ns:my-job")
 	})
 
 	s.Run("Terminate activities delegates the activity batch type", func() {
@@ -225,4 +240,15 @@ func (s *batchCommandTestSuite) TestAdminBatchRefreshTasksSendsRawJobID() {
 	s.NoError(err)
 	s.Equal("my-job", s.client.admin.lastRequest.GetJobId())
 	s.Contains(s.output.String(), "target-ns:my-job")
+
+	s.output.Reset()
+	s.client.admin.workflowID = "server-returned-id"
+	err = s.app.Run([]string{
+		"tdbg", "--namespace", "target-ns", "--yes", "execution", "refresh-tasks",
+		"--query", "WorkflowType='MyWorkflow'", "--reason", "refresh", "--job-id", "target-ns:my-job",
+	})
+	s.NoError(err)
+	s.Equal("target-ns:my-job", s.client.admin.lastRequest.GetJobId())
+	s.Contains(s.output.String(), "Job ID: server-returned-id")
+	s.NotContains(s.output.String(), "target-ns:target-ns:my-job")
 }

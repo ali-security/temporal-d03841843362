@@ -651,7 +651,10 @@ message StartAdminBatchOperationRequest {
   }
 }
 
-message StartAdminBatchOperationResponse {}
+message StartAdminBatchOperationResponse {
+  // Workflow ID of the batch operation in the temporal-system namespace.
+  string workflow_id = 1;
+}
 
 // BatchOperationRefreshTasks refreshes tasks for batch executions.
 // This regenerates all pending tasks for each execution.

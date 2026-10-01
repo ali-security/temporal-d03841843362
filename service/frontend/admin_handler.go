@@ -1334,7 +1334,7 @@ func (adh *AdminHandler) StartAdminBatchOperation(
 		return nil, err
 	}
 	sysNS, sysNSID := primitives.SystemLocalNamespace, primitives.SystemNamespaceID
-	operateJobID := adminBatchWorkflowID(targetNS, adminRequest.GetJobId())
+	operateJobID := targetNS + ":" + adminRequest.GetJobId()
 
 	// Admin batch operations only run in the system namespace, so the concurrency limit is global.
 	maxConcurrentBatchOperation := adh.config.MaxConcurrentAdminBatchOperation()
@@ -1430,16 +1430,7 @@ func (adh *AdminHandler) StartAdminBatchOperation(
 	if err != nil {
 		return nil, err
 	}
-	return &adminservice.StartAdminBatchOperationResponse{}, nil
-}
-
-func adminBatchWorkflowID(targetNamespace, jobID string) string {
-	prefix := targetNamespace + ":"
-	// Older tdbg clients already include the target namespace in the job ID.
-	if strings.HasPrefix(jobID, prefix) {
-		return jobID
-	}
-	return prefix + jobID
+	return &adminservice.StartAdminBatchOperationResponse{WorkflowId: operateJobID}, nil
 }
 
 func validateAdminBatchOperation(params *adminservice.StartAdminBatchOperationRequest) error {

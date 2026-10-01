@@ -113,7 +113,7 @@ func (s *AdminBatchRefreshWorkflowTasksTestSuite) TestStartAdminBatchOperation_J
 	namespaces := []string{env.Namespace().String(), env.ExternalNamespace().String()}
 
 	for _, targetNamespace := range namespaces {
-		_, err := env.AdminClient().StartAdminBatchOperation(s.Context(), &adminservice.StartAdminBatchOperationRequest{
+		resp, err := env.AdminClient().StartAdminBatchOperation(s.Context(), &adminservice.StartAdminBatchOperationRequest{
 			Namespace:       targetNamespace,
 			VisibilityQuery: "WorkflowType='no-matching-workflows'",
 			JobId:           jobID,
@@ -124,6 +124,7 @@ func (s *AdminBatchRefreshWorkflowTasksTestSuite) TestStartAdminBatchOperation_J
 			},
 		})
 		s.Require().NoError(err)
+		s.Require().Equal(targetNamespace+":"+jobID, resp.GetWorkflowId())
 
 		_, err = env.FrontendClient().DescribeWorkflowExecution(s.Context(), &workflowservice.DescribeWorkflowExecutionRequest{
 			Namespace: primitives.SystemLocalNamespace,
@@ -132,11 +133,11 @@ func (s *AdminBatchRefreshWorkflowTasksTestSuite) TestStartAdminBatchOperation_J
 		s.Require().NoError(err)
 	}
 
-	legacyJobID := namespaces[0] + ":" + uuid.NewString()
-	_, err := env.AdminClient().StartAdminBatchOperation(s.Context(), &adminservice.StartAdminBatchOperationRequest{
+	prefixedJobID := namespaces[0] + ":" + uuid.NewString()
+	resp, err := env.AdminClient().StartAdminBatchOperation(s.Context(), &adminservice.StartAdminBatchOperationRequest{
 		Namespace:       namespaces[0],
 		VisibilityQuery: "WorkflowType='no-matching-workflows'",
-		JobId:           legacyJobID,
+		JobId:           prefixedJobID,
 		Reason:          "test prefixed job ID",
 		Identity:        "test-identity",
 		Operation: &adminservice.StartAdminBatchOperationRequest_RefreshTasksOperation{
@@ -144,10 +145,11 @@ func (s *AdminBatchRefreshWorkflowTasksTestSuite) TestStartAdminBatchOperation_J
 		},
 	})
 	s.Require().NoError(err)
+	s.Require().Equal(namespaces[0]+":"+prefixedJobID, resp.GetWorkflowId())
 
 	_, err = env.FrontendClient().DescribeWorkflowExecution(s.Context(), &workflowservice.DescribeWorkflowExecutionRequest{
 		Namespace: primitives.SystemLocalNamespace,
-		Execution: &commonpb.WorkflowExecution{WorkflowId: legacyJobID},
+		Execution: &commonpb.WorkflowExecution{WorkflowId: namespaces[0] + ":" + prefixedJobID},
 	})
 	s.Require().NoError(err)
 }
