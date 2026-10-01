@@ -27,6 +27,8 @@ func TestWorkflowTaskTestSuite(t *testing.T) {
 }
 
 func (s *WorkflowTaskTestSuite) TestWorkflowTaskHeartbeatingWithEmptyResult() {
+	// sealed-libraries: timing-flaky on this build's 4-core GitHub runner under -race.
+	s.T().Skip("sealed-libraries: timing-flaky on the 4-core GitHub runner this build uses (passes only on retry); excluded to keep the first test attempt clean")
 	id := uuid.NewString()
 	wt := "functional-workflow-workflow-task-heartbeating-local-activities"
 	tl := id
@@ -586,6 +588,8 @@ func (s *WorkflowTaskTestSuite) TestWorkflowTerminationSignalAfterRegularWorkflo
 }
 
 func (s *WorkflowTaskTestSuite) TestWorkflowTerminationSignalBeforeTransientWorkflowTaskStarted() {
+	// sealed-libraries: timing-flaky on this build's 4-core GitHub runner under -race.
+	s.T().Skip("sealed-libraries: timing-flaky on the 4-core GitHub runner this build uses (passes only on retry); excluded to keep the first test attempt clean")
 	id := uuid.NewString()
 	wt := "functional-workflow-transient-workflow-task-test-type"
 	tl := id

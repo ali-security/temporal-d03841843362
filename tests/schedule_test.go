@@ -256,8 +256,16 @@ func testBasics(t *testing.T, newContext contextFactory) {
 	// create
 
 	ctx := newContext(s.Context())
-	createTime := time.Now()
-	_, err := s.FrontendClient().CreateSchedule(ctx, req)
+	// sealed-libraries: on the 4-core GitHub runner this build uses, the freshly created
+	// test namespace's search-attribute mapping can lag behind the first CreateSchedule call
+	// ("has no mapping defined for search attribute CustomKeywordField"); retry only that error.
+	var createTime time.Time
+	var err error
+	s.Eventually(func() bool {
+		createTime = time.Now()
+		_, err = s.FrontendClient().CreateSchedule(ctx, req)
+		return err == nil || !strings.Contains(err.Error(), "has no mapping defined for search attribute")
+	}, 30*time.Second, 500*time.Millisecond)
 	s.NoError(err)
 
 	// describe immediately after create and verify FutureActionTimes

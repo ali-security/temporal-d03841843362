@@ -46,6 +46,20 @@ func (env *NexusTestEnv) createNexusEndpoint(t *testing.T, name string, taskQueu
 			},
 		},
 	})
+	// sealed-libraries: upstream's RPC timing is tuned for its 8-core runners; under -race on the
+	// 4-core GitHub runner this build uses, CreateNexusEndpoint can be retried after the server
+	// already registered the endpoint, returning AlreadyExists ("Endpoint with name X already
+	// registered"). Treat that as success and return the existing endpoint.
+	var alreadyExists *serviceerror.AlreadyExists
+	if err != nil && errors.As(err, &alreadyExists) {
+		listResp, listErr := env.OperatorClient().ListNexusEndpoints(testcore.NewContext(), &operatorservice.ListNexusEndpointsRequest{
+			PageSize: 1,
+			Name:     name,
+		})
+		require.NoError(t, listErr)
+		require.Len(t, listResp.Endpoints, 1)
+		return listResp.Endpoints[0]
+	}
 	require.NoError(t, err)
 	return resp.Endpoint
 }

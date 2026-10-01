@@ -256,7 +256,8 @@ func (c *TemporalImpl) Start() error {
 }
 
 func (c *TemporalImpl) Stop() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	// sealed-libraries: upstream's 15s fx stop budget is tuned for its 8-core CI runners; on the 4-core GitHub runner this build uses, TearDownCluster overran it ("context deadline exceeded") after every subtest had passed, failing whole suites such as TestVersioningFunctionalSuite.
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	slices.Reverse(c.fxApps) // less log spam if we go backwards
